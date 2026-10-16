@@ -4,7 +4,9 @@ import { emitEvent, isTMA, mockTelegramEnv } from '@tma.js/sdk-react';
 // Telegram environment so the app can be previewed. Inside Telegram this does
 // nothing. The app shows a "browser preview" note while mocked.
 {
-  if (!await isTMA('complete')) {
+  // Telegram always passes signed launch data (tgWebAppData). Its presence is the
+  // reliable signal; the slower handshake check can time out on Telegram Desktop.
+  if (!isTMA()) {
     (window as { __KINDSET_PREVIEW__?: boolean }).__KINDSET_PREVIEW__ = true;
     const themeParams = {
       accent_text_color: '#6ab2f2',
