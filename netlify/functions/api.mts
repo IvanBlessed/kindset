@@ -105,6 +105,12 @@ async function context(db: SupabaseClient, user: TgUser) {
 
   let event = await maybe(db.from('events').select('*').eq('chapter_id', chapter.id).in('status', ['open', 'live'])
     .order('starts_at', { ascending: true }).limit(1).maybeSingle());
+  // A night that ended more than 6 hours ago closes itself, so next week's opens.
+  if (event && new Date(event.starts_at).getTime() + (event.duration_min + 6 * 60) * 60_000 < Date.now()) {
+    const { count } = await db.from('rounds').select('id', { count: 'exact', head: true }).eq('event_id', event.id);
+    await db.from('events').update({ status: count ? 'finished' : 'cancelled' }).eq('id', event.id);
+    event = null;
+  }
   if (!event) {
     event = await must(db.from('events').insert({
       chapter_id: chapter.id, season_id: season.id, starts_at: nextEventStart(), venue: DEFAULTS.venue,
