@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Telegram opens the app inside its own webview; allow it to be framed by Telegram Web.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org"
+    Referrer-Policy = "strict-origin-when-cross-origin"
