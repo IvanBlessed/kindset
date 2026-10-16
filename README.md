@@ -24,6 +24,21 @@ npm test         # Mexicano engine tests
 npm run build
 ```
 
+## How data flows
+
+Inside Telegram the app talks only to `/api` (a Netlify function, `netlify/functions/api.mts`). The function checks Telegram's signed login with the bot token, then reads and writes Supabase with the secret key. The secret key and bot token never reach the browser. In a normal browser the app runs in **preview mode** with example players saved on that device.
+
+The first person to open the app becomes the chapter organizer. Add more organizers with `ORGANIZER_TELEGRAM_IDS`.
+
+### Netlify environment variables
+
+| Name | Value |
+| --- | --- |
+| `SUPABASE_URL` | `https://<project-id>.supabase.co` |
+| `SUPABASE_SECRET_KEY` | Supabase → Settings → API Keys → Secret key (`sb_secret_…`) |
+| `TELEGRAM_BOT_TOKEN` | from @BotFather |
+| `ORGANIZER_TELEGRAM_IDS` | optional, comma-separated Telegram user ids |
+
 ## Deploy
 
 Netlify builds from this repo using `netlify.toml` (build `npm run build`, publish `dist`). Every push to `main` redeploys.
@@ -44,7 +59,7 @@ supabase/schema.sql     database for the shared version (step 2)
 
 ## Roadmap
 
-1. Shared data with Supabase: registrations, scores and rankings sync across phones; server checks Telegram login.
+1. ✓ Shared data with Supabase: registrations, scores and rankings sync across phones; server checks Telegram login.
 2. Bot messages: reminders, round pairings and results posted in the group.
 3. Payments (iyzico / PayTR), sponsor slots, more chapters.
 

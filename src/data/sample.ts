@@ -1,11 +1,6 @@
-/** Example players so the app opens in a realistic state. Replaced by real
- * registrations once the shared server (Supabase) is connected. */
-export interface Player {
-  id: string;
-  name: string;
-  level: number; // Playtomic-style 0–7
-  langs: string;
-}
+import type { Player } from '@/data/types';
+
+/** Example players for the browser preview. Inside Telegram the app shows real players. */
 
 export const SAMPLE_PLAYERS: Player[] = [
   { id: 'p1', name: 'Emre Kaya', level: 4.4, langs: 'TR EN' },

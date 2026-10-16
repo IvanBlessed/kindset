@@ -4,9 +4,8 @@ import { AppRoot } from '@telegram-apps/telegram-ui';
 import { useEffect, type ReactNode } from 'react';
 
 import { Wordmark } from '@/brand/Logo';
-import { CHAPTER } from '@/data/config';
 import { actions, useAppState } from '@/data/store';
-import { LANGS } from '@/lib/i18n';
+import { LANGS, type Key } from '@/lib/i18n';
 import { useT } from '@/lib/useT';
 import { EventsPage } from '@/pages/EventsPage';
 import { LivePage } from '@/pages/LivePage';
@@ -20,24 +19,38 @@ const ICONS: Record<string, ReactNode> = {
   me: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8.5" r="3.8" /><path d="M4.5 20c1.3-3.7 4-5.5 7.5-5.5s6.2 1.8 7.5 5.5" /></svg>,
 };
 const TABS = [
-  { path: '/', key: 'events' as const, el: <EventsPage /> },
-  { path: '/live', key: 'live' as const, el: <LivePage /> },
-  { path: '/ranking', key: 'ranking' as const, el: <RankingPage /> },
-  { path: '/me', key: 'me' as const, el: <MePage /> },
+  { path: '/', key: 'events' as const, Page: EventsPage },
+  { path: '/live', key: 'live' as const, Page: LivePage },
+  { path: '/ranking', key: 'ranking' as const, Page: RankingPage },
+  { path: '/me', key: 'me' as const, Page: MePage },
 ];
+
+const ERRORS: Record<string, Key> = { not_configured: 'errorSetup', unauthorized: 'errorAuth' };
+
+function Status() {
+  const t = useT();
+  const { data, error } = useAppState();
+  if (data && !error) return null;
+  if (!data && !error) return <p className="ks-card ks-pad ks-muted">{t('loading')}</p>;
+  return (
+    <div className="ks-card ks-pad ks-stack" style={{ marginTop: 0, marginBottom: 12 }}>
+      <p>{t(ERRORS[error!] ?? 'errorGeneric')}</p>
+      {error !== 'unauthorized' && <button className="ks-btn ks-btn--ghost" onClick={actions.retry}>{t('retry')}</button>}
+    </div>
+  );
+}
 
 function Shell() {
   const t = useT();
-  const { lang } = useAppState();
+  const { lang, data, mode } = useAppState();
   useEffect(() => { try { backButton.hide(); } catch { /* empty */ } }, []);
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
-  const preview = (window as { __KINDSET_PREVIEW__?: boolean }).__KINDSET_PREVIEW__;
 
   return (
     <div className="ks-app">
       <header className="ks-header">
         <div>
-          <Wordmark city={CHAPTER.city} />
+          <Wordmark city={data?.chapter.city ?? 'Alanya'} />
           <p className="ks-header__sub">{t('tagline')}</p>
         </div>
         <div className="ks-seg" role="group" aria-label="Language">
@@ -46,11 +59,12 @@ function Shell() {
           ))}
         </div>
       </header>
-      {preview && <p className="ks-note ks-note--top">{t('preview')}</p>}
+      {mode === 'preview' && <p className="ks-note ks-note--top">{t('preview')}</p>}
+      <Status />
       <main className="ks-main">
         <Routes>
-          {TABS.map((tab) => <Route key={tab.path} path={tab.path} element={tab.el} />)}
-          <Route path="*" element={<Navigate to="/" />} />
+          {data && TABS.map(({ path, Page }) => <Route key={path} path={path} element={<Page d={data} />} />)}
+          {data && <Route path="*" element={<Navigate to="/" />} />}
         </Routes>
       </main>
       <nav className="ks-tabbar">

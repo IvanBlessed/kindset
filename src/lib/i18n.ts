@@ -21,6 +21,13 @@ const en = {
   preview: 'Browser preview. Open in Telegram for your real account.',
   localNote: 'Data is saved on this phone until the shared server is connected.',
   raised: 'Raised for charity this season',
+  finish: 'Finish the night', finishNightHint: 'Saves tonight to the season and opens next week\'s sign-up.',
+  raisedLabel: 'Raised for charity tonight', finishConfirm: 'Finish and save',
+  loading: 'Loading…', retry: 'Try again', errorGeneric: 'Could not reach the server. Check your connection.',
+  errorSetup: 'The server is not set up yet. The organizer needs to add the keys in Netlify.',
+  errorAuth: 'Please reopen Kindset from Telegram.', noPlayers: 'No one has signed up yet. Be the first!',
+  noSeason: 'The season table fills in after the first night.', noAwards: 'Awards appear after the first finished night.',
+  sharedNote: 'Live: everyone sees the same rounds and scores.',
 };
 type Dict = typeof en;
 
@@ -44,6 +51,13 @@ const ru: Dict = {
   preview: 'Просмотр в браузере. Откройте в Telegram для своего аккаунта.',
   localNote: 'Данные сохраняются на этом телефоне, пока не подключён общий сервер.',
   raised: 'Собрано на благотворительность за сезон',
+  finish: 'Завершить вечер', finishNightHint: 'Сохраняет вечер в сезон и открывает запись на следующую неделю.',
+  raisedLabel: 'Собрано на благотворительность сегодня', finishConfirm: 'Завершить и сохранить',
+  loading: 'Загрузка…', retry: 'Повторить', errorGeneric: 'Нет связи с сервером. Проверьте интернет.',
+  errorSetup: 'Сервер ещё не настроен. Организатору нужно добавить ключи в Netlify.',
+  errorAuth: 'Откройте Kindset заново из Telegram.', noPlayers: 'Пока никто не записался. Будьте первым!',
+  noSeason: 'Таблица сезона появится после первого вечера.', noAwards: 'Награды появятся после первого завершённого вечера.',
+  sharedNote: 'В реальном времени: все видят одни и те же раунды и счёт.',
 };
 
 const tr: Dict = {
@@ -66,6 +80,13 @@ const tr: Dict = {
   preview: "Tarayıcı önizlemesi. Kendi hesabın için Telegram'da aç.",
   localNote: 'Ortak sunucu bağlanana kadar veriler bu telefonda saklanır.',
   raised: 'Bu sezon hayır için toplanan',
+  finish: 'Geceyi bitir', finishNightHint: 'Bu geceyi sezona kaydeder ve gelecek haftanın kaydını açar.',
+  raisedLabel: 'Bu gece hayır için toplanan', finishConfirm: 'Bitir ve kaydet',
+  loading: 'Yükleniyor…', retry: 'Tekrar dene', errorGeneric: 'Sunucuya ulaşılamadı. Bağlantını kontrol et.',
+  errorSetup: 'Sunucu henüz kurulmadı. Organizatörün anahtarları Netlify\'a eklemesi gerekiyor.',
+  errorAuth: "Lütfen Kindset'i Telegram'dan yeniden aç.", noPlayers: 'Henüz kimse kaydolmadı. İlk sen ol!',
+  noSeason: 'Sezon tablosu ilk geceden sonra dolar.', noAwards: 'Ödüller ilk tamamlanan geceden sonra görünür.',
+  sharedNote: 'Canlı: herkes aynı turları ve skorları görür.',
 };
 
 export const DICT: Record<Lang, Dict> = { en, ru, tr };
