@@ -206,8 +206,14 @@ export default async (req: Request) => {
   const v = verifyInitData(req.headers.get('x-telegram-init-data') ?? '', TELEGRAM_BOT_TOKEN);
   if ('error' in v) {
     // bot id is the public part before ':'; it shows whether the token belongs to this bot.
-    console.warn('auth failed', v.error, 'token bot id', TELEGRAM_BOT_TOKEN.split(':')[0]);
-    return json({ error: 'unauthorized', detail: v.error }, 401);
+    // Ask Telegram which bot this token belongs to (public info), so a wrong token is obvious.
+    let tokenBot = 'token_check_failed';
+    try {
+      const me = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`).then((r) => r.json());
+      tokenBot = me?.ok ? `token=@${me.result.username}` : 'token_revoked_or_invalid';
+    } catch { /* network */ }
+    console.warn('auth failed', v.error, tokenBot);
+    return json({ error: 'unauthorized', detail: `${v.error} · ${tokenBot}` }, 401);
   }
   const user = v.user;
 
