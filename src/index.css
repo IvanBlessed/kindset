@@ -130,3 +130,4 @@ button.ks-pill[aria-pressed="true"] { background: var(--ks-sun); border-color: v
 
 .ks-input { width: 100%; font: inherit; font-family: var(--ks-mono); font-size: 18px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--ks-line); background: var(--ks-bg); color: var(--ks-ink); }
 .ks-pill:disabled, .ks-btn--ghost:disabled { opacity: 0.6; }
+.ks-diag { opacity: 0.6; font-family: var(--ks-mono); font-size: 11px; }

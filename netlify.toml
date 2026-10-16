@@ -11,3 +11,13 @@
   [headers.values]
     Content-Security-Policy = "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Always fetch the newest app page (Telegram's webview caches aggressively).
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"

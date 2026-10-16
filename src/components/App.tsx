@@ -59,7 +59,12 @@ function Shell() {
           ))}
         </div>
       </header>
-      {mode === 'preview' && <p className="ks-note ks-note--top">{t('preview')}</p>}
+      {mode === 'preview' && (
+        <p className="ks-note ks-note--top">
+          {t('preview')}
+          <span className="ks-diag"> · v{__BUILD__} · {location.hash.includes('tgWebApp') ? 'tg-hash' : 'no-hash'}{sessionStorage.length ? ' · ss' : ''}</span>
+        </p>
+      )}
       <Status />
       <main className="ks-main">
         <Routes>

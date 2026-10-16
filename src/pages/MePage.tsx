@@ -54,6 +54,7 @@ export function MePage({ d }: { d: AppData }) {
         <button className="ks-btn ks-btn--ghost ks-mt" onClick={() => setAsking(true)}>{t('reset')}</button>
       ))}
       {mode === 'preview' && <p className="ks-note ks-mt">{t('localNote')}</p>}
+      <p className="ks-small ks-muted ks-mt">Kindset v{__BUILD__}</p>
     </>
   );
 }

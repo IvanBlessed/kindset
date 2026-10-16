@@ -5,6 +5,9 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    __BUILD__: JSON.stringify((process.env.COMMIT_REF ?? 'dev').slice(0, 7)),
+  },
   base: '/',
   css: {
     preprocessorOptions: {
