@@ -112,9 +112,20 @@ async function context(db: SupabaseClient, user: TgUser) {
     event = null;
   }
   if (!event) {
+    // Next game repeats the last one's weekday, time, place and price, one week later.
+    const last = await maybe(db.from('events').select('starts_at, duration_min, venue, price, capacity, courts, target_points')
+      .eq('chapter_id', chapter.id).order('starts_at', { ascending: false }).limit(1).maybeSingle());
+    let startsAt = nextEventStart();
+    if (last) {
+      let t = new Date(last.starts_at).getTime();
+      while (t + (last.duration_min + 6 * 60) * 60_000 < Date.now()) t += 7 * 24 * 3600_000;
+      startsAt = new Date(t).toISOString();
+    }
     event = await must(db.from('events').insert({
-      chapter_id: chapter.id, season_id: season.id, starts_at: nextEventStart(), venue: DEFAULTS.venue,
-      price: DEFAULTS.price, capacity: DEFAULTS.capacity, courts: DEFAULTS.courts, target_points: DEFAULTS.target,
+      chapter_id: chapter.id, season_id: season.id, starts_at: startsAt,
+      duration_min: last?.duration_min ?? 120, venue: last?.venue ?? DEFAULTS.venue, price: last?.price ?? DEFAULTS.price,
+      capacity: last?.capacity ?? DEFAULTS.capacity, courts: last?.courts ?? DEFAULTS.courts,
+      target_points: last?.target_points ?? DEFAULTS.target,
     }).select().single());
   }
   return { chapter, player, role: mine.role as string, season, event };
@@ -301,6 +312,22 @@ export default async (req: Request) => {
         const a = Math.max(0, Math.min(event.target_points, Number(body.scoreA)));
         await must(db.from('matches').update({ score_a: a, score_b: event.target_points - a, done: !!body.done })
           .eq('round_id', round.id).eq('court', Number(body.court)));
+        break;
+      }
+      case 'updateEvent': {
+        if (!organizer) return forbid();
+        const startsAt = new Date(String(body.startsAt));
+        const durationMin = Math.round(Number(body.durationMin));
+        const capacity = Math.round(Number(body.capacity));
+        const courts = Math.round(Number(body.courts));
+        const price = Number(body.price);
+        const venue = String(body.venue ?? '').trim().slice(0, 80);
+        if (Number.isNaN(startsAt.getTime()) || !(durationMin >= 30 && durationMin <= 600) || !(capacity >= 4 && capacity <= 64)
+          || !(courts >= 1 && courts <= 8) || !(price >= 0) || !venue) return json({ error: 'bad_event' }, 400);
+        await must(db.from('events').update({
+          starts_at: startsAt.toISOString(), duration_min: durationMin, venue, price, capacity, courts,
+          reminded_at: null, // a new time gets a fresh reminder
+        }).eq('id', event.id).select('id'));
         break;
       }
       case 'reset':

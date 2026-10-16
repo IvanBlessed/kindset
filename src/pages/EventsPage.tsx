@@ -4,6 +4,7 @@ import { actions, eventPlayers, isOrganizer, useAppState, waitlist } from '@/dat
 import type { AppData } from '@/data/types';
 import { useLocale, useT } from '@/lib/useT';
 import { Eyebrow, LevelEditor, PlayerRow, who } from '@/components/ui';
+import { EventEditor } from '@/components/EventEditor';
 
 export function EventsPage({ d }: { d: AppData }) {
   const { mode, busy } = useAppState();
@@ -15,6 +16,7 @@ export function EventsPage({ d }: { d: AppData }) {
   const pos = d.registered.indexOf(d.me.id);
   const org = isOrganizer(d);
   const [editing, setEditing] = useState<string | null>(null);
+  const [editEvent, setEditEvent] = useState(false);
   const row = (id: string) => {
     const p = who(d.players, id);
     const can = org || id === d.me.id;
@@ -37,8 +39,14 @@ export function EventsPage({ d }: { d: AppData }) {
 
   return (
     <>
-      <section className="ks-hero">
-        <p className="ks-hero__eyebrow">{t('next')}</p>
+      {editEvent && <EventEditor ev={ev} currency={d.chapter.currency} onClose={() => setEditEvent(false)} />}
+      <section className="ks-hero" hidden={editEvent}>
+        <div className="ks-hero__top">
+          <p className="ks-hero__eyebrow">{t('next')}</p>
+          {org && d.rounds.length === 0 && (
+            <button type="button" className="ks-hero__edit" onClick={() => setEditEvent(true)}>✎ {t('editEvent')}</button>
+          )}
+        </div>
         <h1 className="ks-hero__title">{day} · {time(start)}–{time(end)}</h1>
         <p className="ks-hero__meta">{ev.venue} · {ev.price} {d.chapter.currency} · Mexicano · {ev.target}</p>
         <div className="ks-bar"><i style={{ width: `${Math.min(100, (d.registered.length / ev.capacity) * 100)}%` }} /></div>

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import { CHAPTER } from '@/data/config';
 import { LAST_AWARDS, PAST_SEASON, SAMPLE_PLAYERS } from '@/data/sample';
-import type { AppData, Player } from '@/data/types';
+import type { AppData, EventInfo, Player } from '@/data/types';
 import { detectLang, type Lang } from '@/lib/i18n';
 import { nextRound, tally, type Round } from '@/lib/mexicano';
 import { haptic, inTelegram, rawInitData, tgUser } from '@/lib/tg';
@@ -30,7 +30,7 @@ function initialLang(): Lang {
 }
 
 /* ---------- preview mode: local sample data ---------- */
-interface Local { registered: string[]; rounds: Round[]; vote: string | null; organizer: boolean }
+interface Local { registered: string[]; rounds: Round[]; vote: string | null; organizer: boolean; event?: Partial<EventInfo> }
 const LOCAL_KEY = `kindset:${CHAPTER.slug}:preview:v2`;
 const ME: Player = {
   id: 'me', name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'You', level: 3.1,
@@ -52,6 +52,7 @@ function localData(): AppData {
     event: {
       id: 'preview', startsAt: CHAPTER.nextEvent, durationMin: CHAPTER.durationMin, venue: CHAPTER.venue, price: CHAPTER.priceTry,
       capacity: CHAPTER.capacity, courts: CHAPTER.courts, target: CHAPTER.target, status: local.rounds.length ? 'live' : 'open', charityRaised: 0,
+      ...local.event,
     },
     players: SAMPLE, registered: local.registered, rounds: local.rounds, season, awards: LAST_AWARDS, myVote: local.vote,
   };
@@ -159,6 +160,11 @@ export const actions = {
     set({ data: { ...d, players: { ...d.players, [playerId]: { ...d.players[playerId], level: lv } },
       me: playerId === d.me.id ? { ...d.me, level: lv } : d.me } });
     return send({ action: 'level', playerId, level: lv });
+  },
+  updateEvent: (e: Pick<EventInfo, 'startsAt' | 'durationMin' | 'venue' | 'price' | 'capacity' | 'courts'>) => {
+    buzz();
+    if (MODE === 'preview') return saveLocal({ event: { ...local.event, ...e } });
+    return send({ action: 'updateEvent', ...e });
   },
   reset: () => MODE === 'preview' ? saveLocal({ rounds: [], vote: null }) : send({ action: 'reset' }),
   finish: (raised: number) => MODE === 'preview' ? saveLocal({ rounds: [], vote: null }) : send({ action: 'finish', raised }),
