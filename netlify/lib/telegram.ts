@@ -139,3 +139,25 @@ export function reminderPost(time: string, venue: string, price: string, taken: 
   return [`⏰ <b>${head}</b>`, `📍 ${html(venue)} · ${price}`,
     `👥 ${taken}/${cap}` + (left ? ` — свободно ${left} · ${left} spots left · ${left} yer kaldı` : ' — мест нет · full · dolu')].join('\n');
 }
+
+/** Invite card for a group: all three languages, one date line. */
+export function announcePost(dayRu: string, dayTr: string, dayEn: string, from: string, to: string, venue: string, price: string, taken: number, cap: number, first = false) {
+  const left = Math.max(0, cap - taken);
+  const [ru, tr, en] = first ? ['Первая игра!', 'İlk oyun!', 'First game!'] : ['Новая игра!', 'Yeni oyun!', 'Next game!'];
+  return [
+    '🎾 <b>Kindset — падел в Алании · Alanya padel</b>',
+    '',
+    `🇷🇺 ${ru} Формат Mexicano: новый партнёр каждый раунд, равные игры, рейтинг сезона и призы. Любой уровень. Часть взносов — на благотворительность.`,
+    '',
+    `🇹🇷 ${tr} Mexicano formatı: her turda yeni partner, dengeli maçlar, sezon sıralaması ve ödüller. Her seviyeye açık. Ücretin bir kısmı hayır işine gider.`,
+    '',
+    `🇬🇧 ${en} Mexicano format: a new partner every round, even games, season ranking and prizes. All levels. Part of every entry goes to charity.`,
+    '',
+    `📅 ${html(dayRu)} · ${html(dayTr)} · ${html(dayEn)}`,
+    `🕘 ${from}–${to}`,
+    `📍 ${html(venue)} · ${price}`,
+    `👥 ${taken}/${cap}` + (left ? ` — свободно ${left} · ${left} yer · ${left} spots` : ' — мест нет · dolu · full'),
+    '',
+    '👇 Записаться · Kayıt · Sign up',
+  ].join('\n');
+}
