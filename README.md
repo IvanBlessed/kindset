@@ -60,7 +60,7 @@ supabase/schema.sql     database for the shared version (step 2)
 ## Roadmap
 
 1. ✓ Shared data with Supabase: registrations, scores and rankings sync across phones; server checks Telegram login.
-2. Bot messages: reminders, round pairings and results posted in the group.
+2. ✓ Bot: /start welcome, /next, /help, /connect a group; round pairings, results and reminders (netlify/functions/bot.mts, reminder.mts).
 3. Payments (iyzico / PayTR), sponsor slots, more chapters.
 
 Sample players in `src/data/sample.ts` are example data and will be replaced by real registrations.

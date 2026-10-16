@@ -13,7 +13,9 @@
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { nextRound, tally, type Round } from '../../src/lib/mexicano';
+import { nextRound, standings, tally, type Round } from '../../src/lib/mexicano';
+import { chapterChat } from '../lib/db';
+import { appLink, ensureWebhook, resultsPost, roundPost, tg } from '../lib/telegram';
 
 const CHAPTER_SLUG = 'alanya';
 const DEFAULTS = { venue: 'Mahmutlar', price: 500, capacity: 16, courts: 2, target: 21, hour: 18, weekday: 5 /* Friday */ };
@@ -193,6 +195,22 @@ async function state(db: SupabaseClient, ctx: Awaited<ReturnType<typeof context>
   };
 }
 
+/** Best effort: post to the chapter's connected Telegram group. Never fails the request. */
+async function postToGroup(db: SupabaseClient, token: string, chapterId: string, build: (names: (id: string) => string) => Promise<string>) {
+  try {
+    const chat = await chapterChat(db, chapterId);
+    if (!chat) return;
+    const people = await must(db.from('players').select('id, name'));
+    const byId = Object.fromEntries(people.map((p: { id: string; name: string }) => [p.id, p.name]));
+    const text = await build((id) => byId[id] ?? '—');
+    const r = await tg(token, 'sendMessage', {
+      chat_id: chat, text, parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [[{ text: '🎾 Kindset', url: await appLink(token) }]] },
+    });
+    if (!r.ok) console.warn('group post', r.description);
+  } catch (e) { console.warn('group post', e); }
+}
+
 export default async (req: Request) => {
   // Trim: pasted keys often carry a stray space or line break.
   const SUPABASE_URL = process.env.SUPABASE_URL?.trim().replace(/\/+$/, '');
@@ -220,6 +238,8 @@ export default async (req: Request) => {
   const db = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, { auth: { persistSession: false } });
   try {
     const ctx = await context(db, user);
+    // Register the bot webhook once per server start (no manual setup needed).
+    await ensureWebhook(TELEGRAM_BOT_TOKEN, new URL(req.url).origin).catch((e) => console.warn('webhook', e));
     if (req.method === 'GET') return json(await state(db, ctx));
 
     const body = await req.json() as { action: string; [k: string]: unknown };
@@ -265,6 +285,8 @@ export default async (req: Request) => {
           round_id: row.id, court: m.court, a1: m.a[0], a2: m.a[1], b1: m.b[0], b2: m.b[1], score_a: m.scoreA, score_b: m.scoreB, done: false,
         }))));
         if (event.status === 'open') await db.from('events').update({ status: 'live' }).eq('id', event.id);
+        await postToGroup(db, TELEGRAM_BOT_TOKEN, ctx.chapter.id, async (names) =>
+          roundPost(rounds.length + 1, r.matches.map((m) => ({ court: m.court, a: m.a.map(names), b: m.b.map(names) })), r.resting.map(names)));
         break;
       }
       case 'score': {
@@ -281,10 +303,20 @@ export default async (req: Request) => {
         await db.from('award_votes').delete().eq('event_id', event.id);
         await db.from('events').update({ status: 'open' }).eq('id', event.id);
         break;
-      case 'finish':
+      case 'finish': {
         if (!organizer) return forbid();
-        await db.from('events').update({ status: 'finished', charity_raised: Number(body.raised ?? 0) }).eq('id', event.id);
+        const raised = Math.max(0, Number(body.raised ?? 0));
+        await db.from('events').update({ status: 'finished', charity_raised: raised }).eq('id', event.id);
+        const rounds: Round[] = await loadRounds(db, event.id);
+        const regs = await must(db.from('registrations').select('player_id').eq('event_id', event.id));
+        const table = standings(regs.map((x: { player_id: string }) => x.player_id), rounds).filter((x) => x.games > 0);
+        if (table.length) {
+          const currency = ctx.chapter.currency === 'TRY' ? '₺' : ctx.chapter.currency;
+          await postToGroup(db, TELEGRAM_BOT_TOKEN, ctx.chapter.id, async (names) =>
+            resultsPost(table.map((x) => ({ name: names(x.id), points: x.points })), raised, currency));
+        }
         break;
+      }
       default:
         return json({ error: 'unknown_action' }, 400);
     }

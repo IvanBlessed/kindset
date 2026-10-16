@@ -9,6 +9,7 @@ create table chapters (
   currency text not null default 'TRY',
   timezone text not null default 'Europe/Istanbul',
   default_lang text not null default 'ru',
+  telegram_chat_id bigint,                -- group set with /connect
   created_at timestamptz default now()
 );
 
@@ -50,7 +51,8 @@ create table events (
   target_points int default 21,
   format text default 'mexicano' check (format in ('mexicano','americano')),
   status text default 'open' check (status in ('open','live','finished','cancelled')),
-  charity_raised numeric(10,2) default 0
+  charity_raised numeric(10,2) default 0,
+  reminded_at timestamptz                 -- reminder sent once per night
 );
 
 create table registrations (
