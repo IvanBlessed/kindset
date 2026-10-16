@@ -1,11 +1,11 @@
 import { useSyncExternalStore } from 'react';
-import { hapticFeedback, initData } from '@tma.js/sdk-react';
 
 import { CHAPTER } from '@/data/config';
 import { LAST_AWARDS, PAST_SEASON, SAMPLE_PLAYERS } from '@/data/sample';
 import type { AppData, Player } from '@/data/types';
 import { detectLang, type Lang } from '@/lib/i18n';
 import { nextRound, tally, type Round } from '@/lib/mexicano';
+import { haptic, inTelegram, rawInitData, tgUser } from '@/lib/tg';
 
 /**
  * Two modes, same screens:
@@ -20,13 +20,8 @@ export interface State {
   busy: boolean;
 }
 
-const preview = !!(window as { __KINDSET_PREVIEW__?: boolean }).__KINDSET_PREVIEW__;
-let rawInit = '';
-try { rawInit = initData.raw() ?? ''; } catch { /* empty */ }
-const MODE: State['mode'] = !preview && rawInit ? 'shared' : 'preview';
-
-let tgUser: ReturnType<typeof initData.user> | undefined;
-try { tgUser = initData.user(); } catch { /* empty */ }
+const rawInit = rawInitData;
+const MODE: State['mode'] = inTelegram ? 'shared' : 'preview';
 
 const LANG_KEY = 'kindset:lang';
 function initialLang(): Lang {
@@ -66,7 +61,7 @@ function localData(): AppData {
 let state: State = { lang: initialLang(), mode: MODE, data: MODE === 'preview' ? localData() : null, error: null, busy: false };
 const listeners = new Set<() => void>();
 function set(patch: Partial<State>) { state = { ...state, ...patch }; listeners.forEach((l) => l()); }
-const buzz = () => { try { hapticFeedback.impactOccurred.ifAvailable('light'); } catch { /* empty */ } };
+const buzz = haptic;
 
 function saveLocal(next: Partial<Local>) {
   local = { ...local, ...next };
@@ -80,11 +75,14 @@ async function call(method: 'GET' | 'POST', body?: object) {
     headers: { 'x-telegram-init-data': rawInit, ...(body ? { 'content-type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const json = await res.json().catch(() => ({ error: 'server_error' }));
-  if (!res.ok) throw new Error(json.error ?? 'server_error');
+  const json = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(json?.error ?? 'server_error');
+  if (!json?.chapter || !json?.event || !json?.me) throw new Error('server_error');
   return json as AppData;
 }
 
+/** A score change waiting to be sent; refreshes pause meanwhile so taps aren't overwritten. */
+let pendingScore: ReturnType<typeof setTimeout> | null = null;
 let refreshing = false;
 async function refresh() {
   if (MODE !== 'shared' || refreshing || pendingScore) return;
@@ -107,7 +105,6 @@ export function useAppState(): State {
 }
 
 /* Score taps update the screen at once and reach the server shortly after. */
-let pendingScore: ReturnType<typeof setTimeout> | null = null;
 function patchMatch(round: number, court: number, fn: (m: Round['matches'][number]) => void) {
   const d = state.data!;
   const rounds: Round[] = JSON.parse(JSON.stringify(d.rounds));

@@ -1,12 +1,12 @@
 import { HashRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom';
-import { useLaunchParams, useSignal, miniApp, backButton } from '@tma.js/sdk-react';
 import { AppRoot } from '@telegram-apps/telegram-ui';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import { Wordmark } from '@/brand/Logo';
 import { actions, useAppState } from '@/data/store';
 import { LANGS, type Key } from '@/lib/i18n';
 import { useT } from '@/lib/useT';
+import { colorScheme, platform } from '@/lib/tg';
 import { EventsPage } from '@/pages/EventsPage';
 import { LivePage } from '@/pages/LivePage';
 import { RankingPage } from '@/pages/RankingPage';
@@ -43,7 +43,6 @@ function Status() {
 function Shell() {
   const t = useT();
   const { lang, data, mode } = useAppState();
-  useEffect(() => { try { backButton.hide(); } catch { /* empty */ } }, []);
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
   return (
@@ -62,7 +61,7 @@ function Shell() {
       {mode === 'preview' && (
         <p className="ks-note ks-note--top">
           {t('preview')}
-          <span className="ks-diag"> · v{__BUILD__} · {location.hash.includes('tgWebApp') ? 'tg-hash' : 'no-hash'}{sessionStorage.length ? ' · ss' : ''}</span>
+          <span className="ks-diag"> · v{__BUILD__} · {platform}</span>
         </p>
       )}
       <Status />
@@ -84,10 +83,14 @@ function Shell() {
 }
 
 export function App() {
-  const lp = useLaunchParams();
-  const isDark = useSignal(miniApp.isDark);
+  const [scheme, setScheme] = useState(colorScheme());
+  useEffect(() => {
+    const obs = new MutationObserver(() => setScheme(colorScheme()));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
+  }, []);
   return (
-    <AppRoot appearance={isDark ? 'dark' : 'light'} platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}>
+    <AppRoot appearance={scheme} platform={['macos', 'ios'].includes(platform) ? 'ios' : 'base'}>
       <HashRouter>
         <Shell />
       </HashRouter>
