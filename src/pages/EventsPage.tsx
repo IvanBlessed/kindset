@@ -1,7 +1,9 @@
-import { actions, eventPlayers, useAppState, waitlist } from '@/data/store';
+import { useState } from 'react';
+
+import { actions, eventPlayers, isOrganizer, useAppState, waitlist } from '@/data/store';
 import type { AppData } from '@/data/types';
 import { useLocale, useT } from '@/lib/useT';
-import { Eyebrow, PlayerRow, who } from '@/components/ui';
+import { Eyebrow, LevelEditor, PlayerRow, who } from '@/components/ui';
 
 export function EventsPage({ d }: { d: AppData }) {
   const { mode, busy } = useAppState();
@@ -11,6 +13,22 @@ export function EventsPage({ d }: { d: AppData }) {
   const players = eventPlayers(d);
   const wait = waitlist(d);
   const pos = d.registered.indexOf(d.me.id);
+  const org = isOrganizer(d);
+  const [editing, setEditing] = useState<string | null>(null);
+  const row = (id: string) => {
+    const p = who(d.players, id);
+    const can = org || id === d.me.id;
+    return (
+      <div key={id}>
+        {can
+          ? <button type="button" className="ks-rowbtn" aria-expanded={editing === id} onClick={() => setEditing(editing === id ? null : id)}><PlayerRow p={p} /></button>
+          : <PlayerRow p={p} />}
+        {editing === id && (
+          <LevelEditor value={p.level} onChange={(v) => actions.setLevel(id, v)} doneLabel={t('done')} onDone={() => setEditing(null)} />
+        )}
+      </div>
+    );
+  };
   const start = new Date(ev.startsAt);
   const end = new Date(start.getTime() + ev.durationMin * 60000);
   const tz = { timeZone: 'Europe/Istanbul' } as const;
@@ -42,12 +60,13 @@ export function EventsPage({ d }: { d: AppData }) {
 
       <Eyebrow>{t('players')}{mode === 'preview' ? ` · ${t('sample')}` : ''}</Eyebrow>
       {players.length
-        ? <div className="ks-card ks-list">{players.map((id) => <PlayerRow key={id} p={who(d.players, id)} />)}</div>
+        ? <div className="ks-card ks-list">{players.map(row)}</div>
         : <p className="ks-card ks-pad ks-muted">{t('noPlayers')}</p>}
+      {org && players.length > 0 && <p className="ks-small ks-muted ks-mt">{t('tapToLevel')} {t('levelHint')}</p>}
       {wait.length > 0 && (
         <>
           <Eyebrow>{t('waitlist')}</Eyebrow>
-          <div className="ks-card ks-list">{wait.map((id) => <PlayerRow key={id} p={who(d.players, id)} />)}</div>
+          <div className="ks-card ks-list">{wait.map(row)}</div>
         </>
       )}
     </>

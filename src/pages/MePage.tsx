@@ -4,7 +4,7 @@ import { actions, isOrganizer, useAppState } from '@/data/store';
 import type { AppData } from '@/data/types';
 import { tally } from '@/lib/mexicano';
 import { useT } from '@/lib/useT';
-import { Eyebrow, initials } from '@/components/ui';
+import { Eyebrow, LevelEditor, initials } from '@/components/ui';
 
 export function MePage({ d }: { d: AppData }) {
   const { mode } = useAppState();
@@ -31,6 +31,12 @@ export function MePage({ d }: { d: AppData }) {
         </div>
       </section>
 
+      <Eyebrow>{t('myLevel')}</Eyebrow>
+      <div className="ks-card ks-pad">
+        <LevelEditor value={d.me.level} onChange={(v) => actions.setLevel(d.me.id, v)} />
+        <p className="ks-small ks-muted ks-mt">{t('levelHint')}</p>
+      </div>
+
       {mode === 'preview' && (
         <>
           <Eyebrow>{t('organizer')}</Eyebrow>
@@ -54,7 +60,6 @@ export function MePage({ d }: { d: AppData }) {
         <button className="ks-btn ks-btn--ghost ks-mt" onClick={() => setAsking(true)}>{t('reset')}</button>
       ))}
       {mode === 'preview' && <p className="ks-note ks-mt">{t('localNote')}</p>}
-      <p className="ks-small ks-muted ks-mt">Kindset v{__BUILD__}</p>
     </>
   );
 }

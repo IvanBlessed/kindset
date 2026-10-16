@@ -131,3 +131,11 @@ button.ks-pill[aria-pressed="true"] { background: var(--ks-sun); border-color: v
 .ks-input { width: 100%; font: inherit; font-family: var(--ks-mono); font-size: 18px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--ks-line); background: var(--ks-bg); color: var(--ks-ink); }
 .ks-pill:disabled, .ks-btn--ghost:disabled { opacity: 0.6; }
 .ks-diag { opacity: 0.6; font-family: var(--ks-mono); font-size: 11px; }
+
+.ks-rowbtn { display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+.ks-rowbtn[aria-expanded="true"] .ks-row { border-bottom-color: transparent; }
+.ks-list > div:last-child .ks-row { border-bottom: 0; }
+.ks-level { display: flex; align-items: center; gap: 6px; padding: 4px 0 12px; }
+.ks-level button { flex: 1; min-height: 44px; border: 1px solid var(--ks-line); background: var(--ks-bg); border-radius: 10px; font-family: var(--ks-mono); font-size: 13px; font-weight: 700; color: var(--ks-ink); }
+.ks-level b { min-width: 3.2ch; text-align: center; font-size: 22px; color: var(--ks-sun); }
+.ks-level .ks-level__done { flex: 1.3; background: var(--ks-sun); border-color: var(--ks-sun); color: var(--ks-sun-ink); font-family: var(--ks-body); }

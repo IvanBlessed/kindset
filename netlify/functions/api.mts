@@ -235,8 +235,11 @@ export default async (req: Request) => {
         await db.from('registrations').delete().eq('event_id', event.id).eq('player_id', player.id);
         break;
       case 'level': {
+        const target = (body.playerId as string | undefined) ?? player.id;
+        if (target !== player.id && !organizer) return forbid();
         const level = Math.max(0, Math.min(7, Math.round(Number(body.level) * 10) / 10));
-        await db.from('players').update({ level }).eq('id', player.id);
+        if (!Number.isFinite(level)) return json({ error: 'bad_level' }, 400);
+        await must(db.from('players').update({ level }).eq('id', target).select('id'));
         break;
       }
       case 'vote': {

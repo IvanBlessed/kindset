@@ -35,7 +35,7 @@ function Status() {
   return (
     <div className="ks-card ks-pad ks-stack" style={{ marginTop: 0, marginBottom: 12 }}>
       <p>{t(ERRORS[error!] ?? 'errorGeneric')}</p>
-      <p className="ks-diag">{error}{lastDetail ? ` · ${lastDetail}` : ''} · v{__BUILD__}</p>
+      <p className="ks-diag">{error}{lastDetail ? ` · ${lastDetail}` : ''}</p>
       {error !== 'unauthorized' && <button className="ks-btn ks-btn--ghost" onClick={actions.retry}>{t('retry')}</button>}
     </div>
   );
@@ -59,12 +59,7 @@ function Shell() {
           ))}
         </div>
       </header>
-      {mode === 'preview' && (
-        <p className="ks-note ks-note--top">
-          {t('preview')}
-          <span className="ks-diag"> · v{__BUILD__} · {platform}</span>
-        </p>
-      )}
+      {mode === 'preview' && <p className="ks-note ks-note--top">{t('preview')}</p>}
       <Status />
       <main className="ks-main">
         <Routes>

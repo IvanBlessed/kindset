@@ -148,6 +148,18 @@ export const actions = {
     set({ data: { ...state.data!, rounds } });
     void send({ action: 'score', round, court, scoreA: m.scoreA, done });
   },
+  setLevel: (playerId: string, level: number) => {
+    const lv = Math.max(0, Math.min(7, Math.round(level * 10) / 10));
+    if (MODE === 'preview') {
+      if (SAMPLE[playerId]) SAMPLE[playerId] = { ...SAMPLE[playerId], level: lv };
+      if (playerId === ME.id) ME.level = lv;
+      return set({ data: localData() });
+    }
+    const d = state.data!;
+    set({ data: { ...d, players: { ...d.players, [playerId]: { ...d.players[playerId], level: lv } },
+      me: playerId === d.me.id ? { ...d.me, level: lv } : d.me } });
+    return send({ action: 'level', playerId, level: lv });
+  },
   reset: () => MODE === 'preview' ? saveLocal({ rounds: [], vote: null }) : send({ action: 'reset' }),
   finish: (raised: number) => MODE === 'preview' ? saveLocal({ rounds: [], vote: null }) : send({ action: 'finish', raised }),
 };
