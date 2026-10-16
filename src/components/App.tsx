@@ -3,7 +3,7 @@ import { AppRoot } from '@telegram-apps/telegram-ui';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { Wordmark } from '@/brand/Logo';
-import { actions, useAppState } from '@/data/store';
+import { actions, lastDetail, useAppState } from '@/data/store';
 import { LANGS, type Key } from '@/lib/i18n';
 import { useT } from '@/lib/useT';
 import { colorScheme, platform } from '@/lib/tg';
@@ -35,6 +35,7 @@ function Status() {
   return (
     <div className="ks-card ks-pad ks-stack" style={{ marginTop: 0, marginBottom: 12 }}>
       <p>{t(ERRORS[error!] ?? 'errorGeneric')}</p>
+      <p className="ks-diag">{error}{lastDetail ? ` · ${lastDetail}` : ''} · v{__BUILD__}</p>
       {error !== 'unauthorized' && <button className="ks-btn ks-btn--ghost" onClick={actions.retry}>{t('retry')}</button>}
     </div>
   );

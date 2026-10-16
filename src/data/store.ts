@@ -76,7 +76,10 @@ async function call(method: 'GET' | 'POST', body?: object) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const json = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(json?.error ?? 'server_error');
+  if (!res.ok) {
+    lastDetail = json?.detail ?? `HTTP ${res.status}`;
+    throw new Error(json?.error ?? 'server_error');
+  }
   if (!json?.chapter || !json?.event || !json?.me) throw new Error('server_error');
   return json as AppData;
 }
@@ -84,6 +87,8 @@ async function call(method: 'GET' | 'POST', body?: object) {
 /** A score change waiting to be sent; refreshes pause meanwhile so taps aren't overwritten. */
 let pendingScore: ReturnType<typeof setTimeout> | null = null;
 let refreshing = false;
+/** Technical reason for the last error, shown small under the message. */
+export let lastDetail = '';
 async function refresh() {
   if (MODE !== 'shared' || refreshing || pendingScore) return;
   refreshing = true;

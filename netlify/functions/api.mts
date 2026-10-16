@@ -24,18 +24,24 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
 });
 
-function verifyInitData(raw: string, botToken: string): TgUser | null {
+type Verify = { user: TgUser } | { error: 'no_init_data' | 'bad_signature' | 'expired' | 'no_user' };
+
+function verifyInitData(raw: string, botToken: string): Verify {
+  if (!raw) return { error: 'no_init_data' };
   const params = new URLSearchParams(raw);
   const hash = params.get('hash');
-  if (!hash) return null;
+  if (!hash) return { error: 'no_init_data' };
   params.delete('hash');
   const check = [...params.entries()].map(([k, v]) => `${k}=${v}`).sort().join('\n');
   const secret = createHmac('sha256', 'WebAppData').update(botToken).digest();
   const calc = createHmac('sha256', secret).update(check).digest('hex');
-  if (calc.length !== hash.length || !timingSafeEqual(Buffer.from(calc), Buffer.from(hash))) return null;
+  if (calc.length !== hash.length || !timingSafeEqual(Buffer.from(calc), Buffer.from(hash))) return { error: 'bad_signature' };
   const age = Date.now() / 1000 - Number(params.get('auth_date') ?? 0);
-  if (age > 7 * 24 * 3600) return null;
-  try { return JSON.parse(params.get('user') ?? 'null'); } catch { return null; }
+  if (age > 7 * 24 * 3600) return { error: 'expired' };
+  try {
+    const user = JSON.parse(params.get('user') ?? 'null');
+    return user?.id ? { user } : { error: 'no_user' };
+  } catch { return { error: 'no_user' }; }
 }
 
 /** Next Friday 18:00 in Turkey (UTC+3, no daylight saving). */
@@ -188,11 +194,22 @@ async function state(db: SupabaseClient, ctx: Awaited<ReturnType<typeof context>
 }
 
 export default async (req: Request) => {
-  const { SUPABASE_URL, SUPABASE_SECRET_KEY, TELEGRAM_BOT_TOKEN } = process.env;
-  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || !TELEGRAM_BOT_TOKEN) return json({ error: 'not_configured' }, 503);
+  // Trim: pasted keys often carry a stray space or line break.
+  const SUPABASE_URL = process.env.SUPABASE_URL?.trim().replace(/\/+$/, '');
+  const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY?.trim();
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const missing = [!SUPABASE_URL && 'SUPABASE_URL', !SUPABASE_SECRET_KEY && 'SUPABASE_SECRET_KEY', !TELEGRAM_BOT_TOKEN && 'TELEGRAM_BOT_TOKEN'].filter(Boolean);
+  if (missing.length || !SUPABASE_URL || !SUPABASE_SECRET_KEY || !TELEGRAM_BOT_TOKEN) {
+    return json({ error: 'not_configured', detail: missing.join(', ') }, 503);
+  }
 
-  const user = verifyInitData(req.headers.get('x-telegram-init-data') ?? '', TELEGRAM_BOT_TOKEN);
-  if (!user) return json({ error: 'unauthorized' }, 401);
+  const v = verifyInitData(req.headers.get('x-telegram-init-data') ?? '', TELEGRAM_BOT_TOKEN);
+  if ('error' in v) {
+    // bot id is the public part before ':'; it shows whether the token belongs to this bot.
+    console.warn('auth failed', v.error, 'token bot id', TELEGRAM_BOT_TOKEN.split(':')[0]);
+    return json({ error: 'unauthorized', detail: v.error }, 401);
+  }
+  const user = v.user;
 
   const db = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, { auth: { persistSession: false } });
   try {
@@ -265,7 +282,8 @@ export default async (req: Request) => {
     return json(await state(db, await context(db, user)));
   } catch (e) {
     console.error(e);
-    return json({ error: 'server_error' }, 500);
+    const msg = (e as { message?: string; code?: string })?.message ?? '';
+    return json({ error: 'server_error', detail: msg.slice(0, 120) }, 500);
   }
 };
 
